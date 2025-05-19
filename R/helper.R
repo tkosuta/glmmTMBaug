@@ -68,14 +68,15 @@ make_pseudo_data <- function(model_list, psi, nu, const=1e8, param="variance", l
 
     q<-ncol(psi)
     if (param=="precision") {
-      if(nu <  2*q+1) stop(paste0("Increase the value of nu. Minimal nu that can be implemented is: ", 2*q+1))
       cc<-(nu-q-1)/q
+
+      if(nu <  2*q+1) stop(paste0("Increase the value of nu. Minimal nu that can be implemented is: ", 2*q+1))
       if (!isTRUE(all.equal(cc %% 1, 0))) stop(paste0("nu must be such that (nu-",q,"-1)/",q," is an integer"))
       }
     if (param=="variance") {
-
-      if(nu <  2*q+1) stop(paste0("Increase the value of nu. Minimal nu that can be implemented is: ", 2*q-1))
       cc<-(nu+q+1)/q
+
+      if(nu <  2*q-1) stop(paste0("Increase the value of nu. Minimal nu that can be implemented is: ", 2*q-1))
       if (!isTRUE(all.equal(cc %% 1, 0))) stop(paste0("nu must be such that (nu+",q,"+1)/",q," is an integer"))
     }
 

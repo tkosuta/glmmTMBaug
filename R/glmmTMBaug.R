@@ -6,15 +6,15 @@
 #' @param formula A model formula specifying fixed and random effects, as in `glmmTMB`.
 #' @param data A data frame containing the variables used in the model.
 #' @param family family a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. Only binomial(), poison() and gaussian() are currently supproted.
-#' @param penOpt #' @param penOpt A named list of penalty options used to control the penalized likelihood fit. If \code{psi=NULL} and \code{nu=NULL}, a data-driven approach is used to determine psi. If \code{tau=NULL} a data driven approach is used to determine tau.
+#' @param penOpt A named list of penalty options used to control the penalized likelihood fit. If \code{psi=NULL} and \code{nu=NULL}, a data-driven approach is used to determine psi. If \code{tau=NULL} a data driven approach is used to determine tau.
 #' If both \code{psi} and \code{nu} are specified, a prior with those parameters is used instead. In this case, the parameters \code{tau}, \code{trunc} and \code{alpha} are ignored.
 #'   The following penalty options are recognized (with defaults):
 #'   \itemize{
-#'     \item \code{tau} (default: \code{NULL}) — Numeric value in the interval [0, 1]. If NULL, a data-driven method is used to estimate it.
-#'     \item \code{trunc} (default: \code{c(1e-4, 1e4)}) — Lower and upper truncation bounds of eigenvalues in data-drive approach to selecting psi.
+#'     \item \code{tau} (default: \code{NULL}) — Numeric value in the interval \[0, 1\]. If NULL, a data-driven method is used to estimate it.
+#'     \item \code{trunc} (default: \code{c(1e-4, 1e4)}) — Lower and upper truncation bounds of eigenvalues in data-drive approach to determine \code{psi}.
 #'     \item \code{alpha} (default: \code{0.05}) — Significance level used in the data-driven procedure for estimating \code{tau}.
-#'     \item \code{psi} (default: \code{NULL}) — A positive-definite matrix specifying the prior scale matrix for the inverse Wishart (precision) or Wishart (variance) distribution. Required if using a fixed prior.
-#'     \item \code{nu} (default: \code{NULL}) — Degrees of freedom for the prior distribution. Must be compatible with the chosen \code{param}. For example, \code{(nu + q + 1)/q} must be an integer if \code{param = "variance"}.
+#'     \item \code{psi} (default: \code{NULL}) — A positive-definite matrix specifying the prior scale matrix for the inverse Wishart (variance) or Wishart (precision) distribution. Required if using a fixed prior.
+#'     \item \code{nu} (default: \code{NULL}) — Degrees of freedom for the prior distribution. Must be an integer and compatible with the chosen \code{param}. For example, \code{(nu + q + 1)/q} must be an integer if \code{param = "variance"} and \code{(nu - q - 1)/q} must be an integer if \code{param = "precision"}.
 #'     \item \code{const} (default: \code{1e6}) — A constant used in data augmentation to set the value of precision weights for pseudo-observations.
 #'     \item \code{param} (default: \code{"variance"}) — Specifies the parametrization of the prior: either \code{"variance"} for an inverse Wishart prior on the variance-covariance matrix or \code{"precision"} for a Wishart prior on the precision matrix.
 #'   }
@@ -26,7 +26,7 @@
 #' \describe{
 #'   \item{non_pen}{The unpenalized `glmmTMB` model.}
 #'   \item{pen}{The penalized `glmmTMB` model fit with augmented data.}
-#'   \item{tau}{Estimated or supplied penalty strength.}
+#'   \item{tau}{Estimated or supplied shrinkage strength towards mean eigenvalue.}
 #'   \item{error_pen}{If penalized fitting fails (e.g., due to prior mis-specification), the function returns the original unpenalized glmmTMB fit with pen = NULL and a flag error_pen = TRUE to indicate the failure.}
 #' }
 #'
@@ -45,7 +45,6 @@
 #' @export
 
 glmmTMBaug <- function(formula, data, family,
-                       data_driven = TRUE,
                        penOpt = list(),
                        verbose=TRUE,
                        ...) {
@@ -84,15 +83,12 @@ glmmTMBaug <- function(formula, data, family,
 
   pen_fit <- tryCatch({
   if (!data_driven) {
-
     fit <- fit_augmented(model, data_driven = data_driven, penOpt = penOpt, ...)
     tau <- NULL
-
   } else {
     if (!is.null(penOpt$tau)) {
       fit <- fit_augmented(model, data_driven = data_driven, penOpt = penOpt, ...)
       tau <- penOpt$tau
-
     } else {
       # Try initial tau = 1
       penOpt_temp <- penOpt
@@ -127,11 +123,14 @@ glmmTMBaug <- function(formula, data, family,
       }
     }
   }
-  }, error = function(e) {
+
+    list(fit=fit, tau=tau, error_pen=FALSE)
+
+    }, error = function(e) {
     if (verbose) {
       message("Penalized fitting failed: ", conditionMessage(e))
     }
-    NULL
+     list(fit=NULL, tau=NULL, error_pen=TRUE)
   })
 
   if (verbose) {
@@ -154,9 +153,6 @@ glmmTMBaug <- function(formula, data, family,
     message(msg)
   }
 
-  if (is.null(pen_fit)) {
-    return(list(non_pen = model, pen = NULL, tau = tau, error_pen = TRUE))
-  }
+  return(list(non_pen = model, pen = pen_fit$fit, tau=pen_fit$tau, error_pen = pen_fit$error_pen))
 
-  return(list(non_pen = model, pen = pen_fit, tau = tau, error_pen = FALSE))
 }
