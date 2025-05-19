@@ -46,11 +46,13 @@ get_recovmat <- function(model){
   return(mat)
 }
 
-get_psi <- function(D_est, tau){
+get_psi <- function(D_est, tau, trunc){
   q <- ncol(D_est)
   ee <- eigen(D_est)
-  ee$values[ee$values < 1e-4] <- 1e-4
-  ee$values[ee$values > 1e4] <- 1e4
+  min_trunc <- min(trunc)
+  max_trunc <- max(trunc)
+  ee$values[ee$values < min_trunc] <- min_trunc
+  ee$values[ee$values > max_trunc] <- max_trunc
   lm <- mean(ee$values)
   li <- ee$values + tau * (lm - ee$values)
   psi <- ee$vectors %*% diag(li, ncol=q, nrow=q) %*% t(ee$vectors) * 3 * q
@@ -195,7 +197,7 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
 
   if (data_driven) {
     D_est <- get_recovmat(model)[[1]]
-    psi <- get_psi(D_est=D_est, tau=penOpt$tau)
+    psi <- get_psi(D_est=D_est, tau=penOpt$tau, trunc=penOpt$trunc)
     q <- ncol(psi)
     nu <- 2 * q - 1
     const <- penOpt$const
@@ -251,7 +253,7 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
   pen_model <- eval(call_pen, envir = temp_env)
 
   pen_model$fit$objective <- model$obj$fn(pen_model$fit$par)
-  pen_model$frame <- model$frame
+  #pen_model$frame <- model$frame
   pen_model$modelInfo <- model$modelInfo
   pen_model$call <- call
   pen_model$obj$env$data <- model$obj$env$data

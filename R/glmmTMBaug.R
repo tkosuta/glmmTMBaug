@@ -21,7 +21,7 @@
 #' @examples
 #' \dontrun{
 #' data(sleepstudy, package = "lme4")
-#' glmmTMB_aug(Reaction ~ Days + (Days|Subject), data = sleepstudy, family = gaussian())
+#' glmmTMBaug(Reaction ~ Days + (Days|Subject), data = sleepstudy, family = gaussian())
 #' }
 #'
 #' @importFrom glmmTMB glmmTMB glmmTMBControl
@@ -52,7 +52,7 @@ glmmTMBaug <- function(formula, data, family,
   }
 
   penOpt <- modifyList(
-    list(tau = NULL, alpha = 0.05, psi = NULL, nu = NULL, const = 1e6, param = "variance"),
+    list(tau = NULL, trunc=c(10^-4, 10^4), alpha = 0.05, psi = NULL, nu = NULL, const = 1e6, param = "variance"),
     penOpt
   )
   tau_spec <- penOpt$tau

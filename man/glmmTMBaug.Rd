@@ -44,7 +44,7 @@ with a penalty on the random effects covariance matrix via a data augmentation a
 \examples{
 \dontrun{
 data(sleepstudy, package = "lme4")
-glmmTMB_aug(Reaction ~ Days + (Days|Subject), data = sleepstudy, family = gaussian())
+glmmTMBaug(Reaction ~ Days + (Days|Subject), data = sleepstudy, family = gaussian())
 }
 
 }
