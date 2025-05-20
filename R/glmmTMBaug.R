@@ -71,10 +71,6 @@ glmmTMBaug <- function(formula, data, family,
     stop("'tau' must be either NULL or a number on [0,1] interval.")
   }
 
-  if (!is.null(penOpt$alpha) && (!is.numeric(penOpt$alpha) || length(penOpt$alpha) != 1 || penOpt$alpha < 0 || penOpt$alpha > 1)) {
-    stop("'alpha' must be either NULL or a number on [0,1] interval.")
-  }
-
   if (is.null(penOpt$const) && (!is.numeric(penOpt$const) || length(penOpt$const) != 1 || penOpt$const < 0)){
     stop("'const' has to be a positive number.")
   }
@@ -111,6 +107,10 @@ glmmTMBaug <- function(formula, data, family,
       penOpt_temp <- penOpt
       penOpt_temp$tau <- 1
       fit_tau1 <- fit_augmented(model, data_driven = data_driven, penOpt = penOpt_temp, ...)
+
+      if (is.null(penOpt$alpha) && (!is.numeric(penOpt$alpha) || length(penOpt$alpha) != 1 || penOpt$alpha < 0 || penOpt$alpha > 1)) {
+        stop("'alpha' must be a number on [0,1] interval. It should be specified for data-driven approach to determine 'tau'. ")
+      }
 
       crit <- abs(get_margLik_glmmtmb(model, fit_tau1) - model$fit$objective) >
         qchisq(1 - penOpt$alpha, df = 1) / 2
