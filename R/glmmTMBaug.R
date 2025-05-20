@@ -66,6 +66,23 @@ glmmTMBaug <- function(formula, data, family,
     list(tau = NULL, trunc=c(10^-4, 10^4), alpha = 0.05, psi = NULL, nu = NULL, const = 1e6, param = "variance"),
     penOpt
   )
+
+  if (!is.null(penOpt$tau) && (!is.numeric(penOpt$tau) || length(penOpt$tau) != 1 || penOpt$tau < 0 || penOpt$tau > 1)) {
+    stop("'tau' must be either NULL or a number on [0,1] interval.")
+  }
+
+  if (!is.null(penOpt$alpha) && (!is.numeric(penOpt$alpha) || length(penOpt$alpha) != 1 || penOpt$alpha < 0 || penOpt$alpha > 1)) {
+    stop("'alpha' must be either NULL or a number on [0,1] interval.")
+  }
+
+  if (is.null(penOpt$const) && (!is.numeric(penOpt$const) || length(penOpt$const) != 1 || penOpt$const < 0)){
+    stop("'const' has to be a positive number.")
+  }
+
+  if (penOpt$const < 1e4) {
+    warning("Smaller value of 'const' may result in poor penalty approximation. The recomended value of const is 10^6.")
+  }
+
   tau_spec <- penOpt$tau
 
   model <- glmmTMB::glmmTMB(formula = formula, data = data, family = family, ...)
@@ -114,7 +131,7 @@ glmmTMBaug <- function(formula, data, family,
         } else {
           penOpt$tau <- opt_tau$root
         }
-        fit <- fit_augmented(model, data_driven = TRUE, penOpt = penOpt, ...)
+        fit <- fit_augmented(model, data_driven = data_driven, penOpt = penOpt, ...)
 
         tau <- penOpt$tau
       } else {

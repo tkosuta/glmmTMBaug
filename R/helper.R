@@ -47,6 +47,10 @@ get_recovmat <- function(model){
 }
 
 get_psi <- function(D_est, tau, trunc){
+  if (!is.numeric(trunc) || length(trunc) != 2 || any(trunc <= 0)) {
+    stop("'trunc' must be a numeric vector of two positive numbers.")
+  }
+
   q <- ncol(D_est)
   ee <- eigen(D_est)
   min_trunc <- min(trunc)
