@@ -87,7 +87,7 @@ make_pseudo_data <- function(model_list, psi, nu, const=1e8, param="variance", l
     true<-psi/cc
     ee<-eigen(true,TRUE)
 
-    if(!all(ee>0)) stop("'psi' needs to be positive definite.")
+    if(!all(ee$values>0)) stop("'psi' needs to be positive definite.")
 
     ui<-list()
     for (j in 1:q){

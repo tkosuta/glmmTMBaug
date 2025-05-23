@@ -144,10 +144,8 @@ glmmTMBaug <- function(formula, data, family,
     list(fit=fit, tau=tau, error_pen=FALSE)
 
     }, error = function(e) {
-    if (verbose) {
       message("Penalized fitting failed: ", conditionMessage(e))
-    }
-     list(fit=NULL, tau=NULL, error_pen=TRUE)
+      list(fit=NULL, tau=NULL, error_pen=TRUE)
   })
 
   if (verbose) {
@@ -160,8 +158,8 @@ glmmTMBaug <- function(formula, data, family,
         paste0(paste0("data-driven", ifelse(penOpt$param=="precision", " (Wishart)", " (Inverse Wishart)")),
                " \n  - tau: ",
                ifelse(is.null(tau_spec),
-                      paste0("estimated to ", format(tau, digits = 4)),
-                      paste0("predefined to ", format(tau, digits = 4))))
+                      paste0("estimated to ", format(pen_fit$tau, digits = 4)),
+                      paste0("predefined to ", format(pen_fit$tau, digits = 4))))
       }, "\n",
       "  - parametrization: ", penOpt$param,
       "\n",
@@ -173,3 +171,4 @@ glmmTMBaug <- function(formula, data, family,
   return(list(non_pen = model, pen = pen_fit$fit, tau=pen_fit$tau, error_pen = pen_fit$error_pen))
 
 }
+
