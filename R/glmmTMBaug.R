@@ -23,9 +23,8 @@
 #' @param ... Additional arguments passed to `glmmTMB()`.
 #'
 #' @details
-#' When the random effect structure is univariate, the prior distribution on the variance is Inverse Gamma distribution that equals to univariate Inverse Wishart distribution
-#' with parameters \code{nu} and \code{psi}.
-#' To implement a Inverse Gamma penalty (or some other parametrization, see \code{penOpt} parameter \code{param} for details) with specified shape and scale
+#' When the random effect structure is univariate, the prior distribution on the variance is Inverse Gamma distribution that equals to univariate Inverse Wishart distribution.
+#' To implement an Inverse Gamma penalty (or some other parametrization; see \code{penOpt} parameter \code{param} for details) with specified shape and scale,
 #' set \eqn{\nu = 2\alpha} and \eqn{\psi = 2\beta}.
 #'
 #' @return A list with elements:

@@ -46,12 +46,10 @@ This function extends \code{glmmTMB} to fit generalized linear mixed models (GLM
 with a penalty on the random effects covariance matrix via a data augmentation approach.
 }
 \details{
-When the random effect structure is univariate (i.e., there is only one variance component),
-the prior distribution on the variance is derived from the Inverse Wishart distribution
-with parameters \code{nu} (degrees of freedom) and \code{psi} (scale).
-In the univariate case, this reduces to an Inverse Gamma distribution.
-Specifically, \code{nu} and \code{psi} are internally translated to the Inverse Gamma shape and scale
-parameters as \eqn{\alpha = \nu / 2} and \eqn{\beta = \psi / 2}. Set the \eqn{\nu = 2\alpha} and \eqn{\psi = 2\beta}.
+When the random effect structure is univariate, the prior distribution on the variance is Inverse Gamma distribution that equals to univariate Inverse Wishart distribution
+with parameters \code{nu} and \code{psi}.
+To implement a Inverse Gamma penalty (or some other parametrization, see \code{penOpt} parameter \code{param} for details) with specified shape and scale
+set \eqn{\nu = 2\alpha} and \eqn{\psi = 2\beta}.
 }
 \examples{
 \dontrun{
