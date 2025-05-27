@@ -24,8 +24,8 @@
 #'
 #' @details
 #' When the random effect structure is univariate, the prior distribution on the variance is Inverse Gamma distribution that equals to univariate Inverse Wishart distribution.
-#' To implement an Inverse Gamma penalty (or some other parametrization; see \code{penOpt} parameter \code{param} for details) with specified shape and scale,
-#' set \eqn{\nu = 2\alpha} and \eqn{\psi = 2\beta}.
+#' To implement an Inverse Gamma penalty (or some other parametrization; see \code{penOpt} parameter \code{param} for details) with specified shape (\eqn{\alpha}) and scale(\eqn{\beta}),
+#' set \code{nu=}\eqn{2\alpha} and \code{psi= }\eqn{2\beta}.
 #'
 #' @return A list with elements:
 #'
