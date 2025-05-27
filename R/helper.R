@@ -124,11 +124,11 @@ make_pseudo_data <- function(model_list, psi, nu, const=1e8, param="variance", l
   }else{
     if (is.null(match.arg(param,c("precision","variance","log variance")))) stop("param needs to be one of: precision, variance or log variance")
 
-    if (param=="precision") N<-max(c(floor(2*(nu-1)),1))
-    if (param=="variance") N<-max(c(floor(2*(nu+1)),1))
-    if (param=="log variance") N<-max(c(floor(2*(nu)),1))
+    if (param=="precision") N<-max(c(floor(2*((nu/2)-1)),1))
+    if (param=="variance") N<-max(c(floor(2*((nu/2)+1)),1))
+    if (param=="log variance") N<-max(c(floor(2*(nu/2)),1))
 
-    var.int <- psi*2/N
+    var.int <- (psi/2)*2/N
     fact <- N
 
     true <- matrix(var.int, ncol=1, nrow=1)
@@ -267,11 +267,11 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
 
   pen_model <- eval(call_pen, envir = temp_env)
 
-  pen_model$fit$objective <- model$obj$fn(pen_model$fit$par)
+  #pen_model$fit$objective <- model$obj$fn(pen_model$fit$par)
   #pen_model$frame <- model$frame
-  pen_model$modelInfo <- model$modelInfo
-  pen_model$call <- call
-  pen_model$obj$env$data <- model$obj$env$data
+  #pen_model$modelInfo <- model$modelInfo
+  #pen_model$call <- call
+  #pen_model$obj$env$data <- model$obj$env$data
 
   return(pen_model)
 }
