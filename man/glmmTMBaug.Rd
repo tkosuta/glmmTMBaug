@@ -57,7 +57,7 @@ library(blmeco)
 data(ellenberg)
 ellenberg$gradient  <-  paste(ellenberg$Year, ellenberg$Soil)
 ellenberg$water.z <- as.numeric(scale(ellenberg$Water))
-glmmTMB(log(Yi.g) ~ water.z + I(water.z^2) +
+glmmTMBaug(log(Yi.g) ~ water.z + I(water.z^2) +
           (water.z + I(water.z^2)|Species) + (1|gradient), data=ellenberg, family="gaussian")
 
 }
