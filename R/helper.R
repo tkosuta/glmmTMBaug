@@ -180,7 +180,7 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
   gr <- as.numeric(factor(mf[, rand_formula[["gr"]]]))
 
   if (is.matrix(Y) && ((family$family != "binomial" && ncol(Y) > 1) || (ncol(Y) > 2))) {
-    stop("can't handle matrix-valued responses: consider using refit()")
+    stop("Can't handle matrix-valued responses.")
   }
 
   mf$`(offset)` <- if (!is.null(model.offset(mf))) model.offset(mf) else 0

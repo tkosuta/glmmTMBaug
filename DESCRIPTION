@@ -10,11 +10,10 @@ Description: Provides tools for penalized estimation in generalized linear mixed
 License: GPL-3
 Encoding: UTF-8
 Depends:
-    R (>= 3.5.0),
+    R (>= 4.4.0),
     glmmTMB (>= 1.1.10),
     lme4 (>= 1.1-18.9000),
 Imports:
     stats
-LazyData: TRUE
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2

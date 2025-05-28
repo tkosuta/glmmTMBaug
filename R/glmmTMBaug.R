@@ -15,7 +15,7 @@
 #'     \item \code{trunc} (default: \code{c(1e-4, 1e4)}) — Lower and upper truncation bounds of eigenvalues in data-drive approach to determine \code{psi}.
 #'     \item \code{alpha} (default: \code{0.05}) — Significance level used in the data-driven procedure for estimating \code{tau}.
 #'     \item \code{psi} (default: \code{NULL}) — A positive-definite matrix specifying the prior scale matrix for the inverse Wishart (variance) or Wishart (precision) distribution. Required if using a fixed predefined penalty.
-#'     \item \code{nu} (default: \code{NULL}) — Degrees of freedom for the prior distribution. Must be an integer and compatible with the chosen \code{param}. For example, \code{(nu + q + 1)/q} must be an integer if \code{param = "variance"} and \code{(nu - q - 1)/q} must be an integer if \code{param = "precision"}.
+#'     \item \code{nu} (default: \code{NULL}) — Degrees of freedom for the prior distribution. Required if using a fixed predefined penalty. Must be an integer and compatible with the chosen \code{param}. For example, \code{(nu + q + 1)/q} must be an integer if \code{param = "variance"} and \code{(nu - q - 1)/q} must be an integer if \code{param = "precision"}.
 #'     \item \code{const} (default: \code{1e6}) — A constant used in data augmentation to set the value of precision weights for pseudo-observations. Larger values may provide better approximation of the penalty, but may introduce numerical instability. Small values may result in poor approximation of the penalty.
 #'     \item \code{param} (default: \code{"variance"}) — Specifies the parametrization of the prior: either \code{"variance"} for an inverse Wishart prior on the variance-covariance matrix or \code{"precision"} for a Wishart prior on the precision matrix. For univariate random effect, \code{"log variance"} can also be specified.
 #'   }
@@ -24,10 +24,10 @@
 #'
 #' @details
 #' When the random effect structure is univariate, the prior distribution on the variance is Inverse Gamma distribution that equals to univariate Inverse Wishart distribution.
-#' To implement an Inverse Gamma penalty (or some other parametrization; see \code{penOpt} parameter \code{param} for details) with specified shape (\eqn{\alpha}) and scale(\eqn{\beta}),
+#' To implement an Inverse Gamma penalty (or some other parametrization; see \code{penOpt} parameter \code{param} for details) with specified shape (\eqn{\alpha}) and scale (\eqn{\beta}),
 #' set \code{nu=}\eqn{2\alpha} and \code{psi= }\eqn{2\beta}.
 #'
-#' @return A list with elements:
+#' @return The function returns a list with elements:
 #'
 #' \describe{
 #'   \item{non_pen}{The unpenalized `glmmTMB` model.}
@@ -36,12 +36,21 @@
 #'   \item{error_pen}{If penalized fitting fails, the function returns the original unpenalized glmmTMB fit with pen = NULL and a flag error_pen = TRUE to indicate the failure.}
 #' }
 #'
+#'
+#' @references
+#'  To be added after the article is published.
+#'
 #' @examples
 #' \dontrun{
-#' data(sleepstudy, package = "lme4")
-#' glmmTMBaug(Reaction ~ Days + (Days|Subject), data = sleepstudy, family = gaussian())
-#' }
 #'
+#' library(blmeco)
+#' data(ellenberg)
+#' ellenberg$gradient  <-  paste(ellenberg$Year, ellenberg$Soil)
+#' ellenberg$water.z <- as.numeric(scale(ellenberg$Water))
+#' glmmTMBaug(log(Yi.g) ~ water.z + I(water.z^2) +
+#'           (water.z + I(water.z^2)|Species) + (1|gradient), data=ellenberg, family="gaussian")
+#'
+#'}
 #' @importFrom glmmTMB glmmTMB glmmTMBControl
 #' @importFrom stats as.formula formula getCall model.frame model.matrix
 #'  model.offset model.response model.weights qchisq uniroot
@@ -87,7 +96,21 @@ glmmTMBaug <- function(formula, data, family,
 
   tau_spec <- penOpt$tau
 
-  model <- glmmTMB::glmmTMB(formula = formula, data = data, family = family, ...)
+  model <- withCallingHandlers(
+    tryCatch({
+      glmmTMB::glmmTMB(formula = formula, data = data, family = family, ...)
+    }, error = function(e) {
+      stop("Non-penalized fitting failed: ", conditionMessage(e))
+      NULL
+    }),
+    warning = function(w) {
+      message("Non-penalized fitting warning: ", conditionMessage(w))
+    },
+    message = function(m) {
+      message("Non-penalized fitting message: ", conditionMessage(m))
+    }
+  )
+
 
   allowed_families <- c("binomial", "poisson", "gaussian")
   if (!(model$modelInfo$family$family %in% allowed_families)) {
@@ -100,7 +123,8 @@ glmmTMBaug <- function(formula, data, family,
 
   data_driven <- is.null(penOpt$psi) && is.null(penOpt$nu)
 
-  pen_fit <- tryCatch({
+  pen_fit <- withCallingHandlers(
+    tryCatch({
   if (!data_driven) {
     fit <- fit_augmented(model, data_driven = data_driven, penOpt = penOpt, ...)
     tau <- NULL
@@ -152,7 +176,14 @@ glmmTMBaug <- function(formula, data, family,
     }, error = function(e) {
       message("Penalized fitting failed: ", conditionMessage(e))
       list(fit=NULL, tau=NULL, error_pen=TRUE)
-  })
+  }),
+  warning = function(w) {
+    message("Penalized fitting warning: ", conditionMessage(w))
+  },
+  message = function(m) {
+    message("Penalized fitting message: ", conditionMessage(m))
+  }
+  )
 
   if (verbose) {
     msg <- paste0(
