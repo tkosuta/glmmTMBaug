@@ -34,6 +34,8 @@ get_random_formula <- function(model) {
       lhs <- random_parts[[2]]
       rhs <- random_parts[[3]]
 
+      if(length(as.character(rhs))>1) stop("Only simple random effects of type (REexpr1 | factor1) + (REexpr2 | factor2) + ... are supported. Expressions of type (REexpr | factor1:factor2) or (REexpr | factor1/factor2) are not supported.")
+
       res <- list(expr=as.formula(paste0("~", deparse(lhs))),
                   gr=as.character(rhs))
 

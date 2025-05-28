@@ -105,9 +105,7 @@ glmmTMBaug <- function(formula, data, family,
     }),
     warning = function(w) {
       message("Non-penalized fitting warning: ", conditionMessage(w))
-    },
-    message = function(m) {
-      message("Non-penalized fitting message: ", conditionMessage(m))
+      invokeRestart("muffleWarning")
     }
   )
 
@@ -178,14 +176,14 @@ glmmTMBaug <- function(formula, data, family,
       list(fit=NULL, tau=NULL, error_pen=TRUE)
   }),
   warning = function(w) {
-    message("Penalized fitting warning: ", conditionMessage(w))
-  },
-  message = function(m) {
-    message("Penalized fitting message: ", conditionMessage(m))
+    if (!grepl("non-integer counts in a", conditionMessage(w))) {
+      message("Penalized fitting warning: ", conditionMessage(w))
+    }
+    invokeRestart("muffleWarning")
   }
   )
 
-  if (verbose) {
+  if (verbose & !pen_fit$error_pen) {
     msg <- paste0(
       "Penalized estimation summary:\n",
       "  - prior source: ",
