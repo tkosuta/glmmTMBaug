@@ -15,6 +15,7 @@ is_simple_random_structure <- function(model) {
   return(is_valid_lhs && is_valid_rhs)
 }
 
+
 get_fixed_formula <- function(model) {
   fixed_form <- nobars(formula(model))
   fixed_form_no_offset <- as.formula(trimws(gsub("\\+?\\s*offset\\([^)]*\\)", "", deparse(fixed_form))))
@@ -26,13 +27,21 @@ get_random_formula <- function(model) {
   random_form <- findbars(formula(model))
 
   if (!is.null(random_form)) {
-    random_parts <- random_form[[1]]
-    bar <- random_parts[[1]]
-    lhs <- random_parts[[2]]
-    rhs <- random_parts[[3]]
+    re_list <- NULL; j=1
+    for(i in random_form){
+      random_parts <- i
+      bar <- random_parts[[1]]
+      lhs <- random_parts[[2]]
+      rhs <- random_parts[[3]]
 
-    return(list(expr=as.formula(paste0("~", deparse(lhs))),
-                gr=as.character(rhs)))
+      res <- list(expr=as.formula(paste0("~", deparse(lhs))),
+                  gr=as.character(rhs))
+
+      re_list[[j]] <- res
+      j=j+1
+
+    }
+    return(re_list)
   } else {
     return(NULL)
   }
@@ -63,25 +72,26 @@ get_psi <- function(D_est, tau, trunc){
 }
 
 make_pseudo_data <- function(model_list, psi, nu, const=1e8, param="variance", linkinv=function(x) x){
-  if (ncol(model_list$Z)!=ncol(psi)) stop("psi does not match dimension of random effects")
 
   d <- ncol(model_list$X)
 
-  if(ncol(model_list$Z)>1){
-    if (is.null(match.arg(param,c("precision", "variance")))) stop("param needs to be one of: precision,variance")
+  if(ncol(model_list$Z1)>1){
+    if (ncol(model_list$Z1)!=ncol(psi)) stop("'psi' does not match dimension of random effects")
+
+    if (is.null(match.arg(param,c("precision", "variance")))) stop("'param' needs to be one of: precision,variance")
 
     q<-ncol(psi)
     if (param=="precision") {
       cc<-(nu-q-1)/q
 
       if(nu <  2*q+1) stop(paste0("Increase the value of 'nu'. Minimal 'nu' that can be implemented is: ", 2*q+1))
-      if (!isTRUE(all.equal(cc %% 1, 0))) stop(paste0("nu must be such that (nu-",q,"-1)/",q," is an integer"))
+      if (!isTRUE(all.equal(cc %% 1, 0))) stop(paste0("'nu' must be such that (nu-",q,"-1)/",q," is an integer"))
       }
     if (param=="variance") {
       cc<-(nu+q+1)/q
 
       if(nu <  2*q-1) stop(paste0("Increase the value of 'nu'. Minimal 'nu' that can be implemented is: ", 2*q-1))
-      if (!isTRUE(all.equal(cc %% 1, 0))) stop(paste0("nu must be such that (nu+",q,"+1)/",q," is an integer"))
+      if (!isTRUE(all.equal(cc %% 1, 0))) stop(paste0("'nu' must be such that (nu+",q,"+1)/",q," is an integer"))
     }
 
     true<-psi/cc
@@ -122,7 +132,9 @@ make_pseudo_data <- function(model_list, psi, nu, const=1e8, param="variance", l
       }
     }
   }else{
-    if (is.null(match.arg(param,c("precision","variance","log variance")))) stop("param needs to be one of: precision, variance or log variance")
+    if (!(is.numeric(psi) && length(psi) == 1)) stop("'psi' must be a numeric scalar or a 1x1 matrix in the case of univariate random effects.")
+
+    if (is.null(match.arg(param,c("precision","variance","log variance")))) stop("'param' needs to be one of: precision, variance or log variance")
 
     if (param=="precision") N<-max(c(floor(2*((nu/2)-1)),1))
     if (param=="variance") N<-max(c(floor(2*((nu/2)+1)),1))
@@ -142,15 +154,26 @@ make_pseudo_data <- function(model_list, psi, nu, const=1e8, param="variance", l
     Z < -matrix(rep(1,fact),ncol=1)
   }
 
-  return(list(Y=Y,
-              X=matrix(0, ncol=d, nrow=length(Y)),
-              Z=Z,
-              gr=max(model_list$gr) + id,
-              prec_weights=rep(const,length(id)),
-              freq_weights=rep(1, length(Y)),
-              offset=rep(0, length(Y))
-  )
-  )
+  pseudo_list <- list(Y=Y,
+                      X=matrix(0, ncol=d, nrow=length(Y)),
+                      offset=rep(0, length(Y)),
+                      prec_weights=rep(const,length(id)),
+                      freq_weights=rep(1, length(Y)),
+                      Z1=Z,
+                      gr1=max(model_list$gr1) + id
+                      )
+
+  num_re <- sum(grepl("Z", names(model_list)))
+
+  if(num_re>1){
+    for(i in 2:num_re){
+      lml <- length(pseudo_list)
+      pseudo_list <- append(pseudo_list,
+                           eval(parse(text=paste0("list(Z",i,"=matrix(0, ncol=ncol(model_list$Z",i,"), nrow=length(Y)), gr",i,"=max(model_list$gr",i,") + id)"))),
+                           after=lml)
+    }
+  }
+  return(pseudo_list)
 }
 
 combine_two_lists <- function(x, y) {
@@ -176,8 +199,12 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
 
   Y <- model.response(mf)
   X <- model.matrix(fix_formula, mf)
-  Z <- model.matrix(rand_formula[["expr"]], mf)
-  gr <- as.numeric(factor(mf[, rand_formula[["gr"]]]))
+  # Z <- model.matrix(rand_formula[["expr"]], mf)
+  # gr <- as.numeric(factor(mf[, rand_formula[["gr"]]]))
+  for(i in 1:length(rand_formula)){
+    eval(parse(text=paste0("Z",i, "<- model.matrix(rand_formula[[",i,"]][[1]], mf)")))
+    eval(parse(text=paste0("gr",i, "<- as.numeric(factor(mf[, rand_formula[[",i,"]][[2]]]))")))
+  }
 
   if (is.matrix(Y) && ((family$family != "binomial" && ncol(Y) > 1) || (ncol(Y) > 2))) {
     stop("Can't handle matrix-valued responses.")
@@ -199,16 +226,32 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
     }
   }
 
+  # model_list <- list(
+  #   Y = Y,
+  #   X = X,
+  #   Z = Z,
+  #   gr = gr,
+  #   weights = mf$`(weights)`,
+  #   offset = mf$`(offset)`,
+  #   prec_weights = mf$prec_weights,
+  #   freq_weights = mf$freq_weights
+  # )
+
   model_list <- list(
     Y = Y,
     X = X,
-    Z = Z,
-    gr = gr,
     weights = mf$`(weights)`,
     offset = mf$`(offset)`,
     prec_weights = mf$prec_weights,
     freq_weights = mf$freq_weights
   )
+
+  for(i in 1:length(rand_formula)){
+    lml <- length(model_list)
+    model_list <- append(model_list,
+                         eval(parse(text=paste0("list(Z",i,"=Z",i,", gr",i,"=gr",i,")"))),
+                         after=lml)
+  }
 
   if (data_driven) {
     D_est <- get_recovmat(model)[[1]]
@@ -245,9 +288,14 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
   names(augmented_list) <- names(pseudo_list)
 
   call <- getCall(model)
-
   call_pen <- call
-  call_pen$formula <- as.formula("Y~-1+X+(-1+Z|gr)")
+
+  form <- "Y~-1+X"
+  for(i in 1:length(rand_formula)){
+    form <-  paste0(form, "+(-1+Z", i, "|gr",i,")")
+  }
+
+  call_pen$formula <- as.formula(form)
   call_pen$data <- as.symbol("augmented_list")
   if(!is.null(model.offset(mf))) call_pen$offset <-  as.symbol("offset")
   if(any(family$family %in% c("binomial", "poisson"))){

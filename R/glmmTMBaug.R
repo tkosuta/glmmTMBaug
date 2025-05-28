@@ -72,10 +72,10 @@ glmmTMBaug <- function(formula, data, family,
     stop("Non-default dispformula is not supported.")
   }
 
-  rand_terms <- lme4::findbars(formula)
-  if (length(rand_terms) != 1) {
-    stop("Only models with a single random effect term are supported currently.")
-  }
+  # rand_terms <- lme4::findbars(formula)
+  # if (length(rand_terms) != 1) {
+  #   stop("Only models with a single random effect term are supported currently.")
+  # }
 
   penOpt <- modifyList(
     list(tau = NULL, trunc=c(10^-4, 10^4), alpha = 0.05, psi = NULL, nu = NULL, const = 1e6, param = "variance"),
