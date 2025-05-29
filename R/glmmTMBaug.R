@@ -3,7 +3,10 @@
 #' This function extends `glmmTMB` to fit generalized linear mixed models (GLMMs)
 #' with a penalty on the random effects covariance matrix via a data augmentation approach.
 #'
-#' @param formula A model formula specifying fixed and random effects, as in `glmmTMB`.
+#' @param formula #' A model formula specifying fixed and random effects, as in \code{glmmTMB}.
+#' The current implementation supports penalization of a single grouping factor
+#' (i.e., one level of random effects).
+#' By default, the first random effect term specified in the formula is penalized.
 #' @param data A data frame containing the variables used in the model.
 #' @param family a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. Only binomial(), poisson() and gaussian() are currently supproted.
 #' @param penOpt A named list of penalty options used to control the penalized likelihood fit. If \code{psi=NULL} and \code{nu=NULL}, a data-driven approach is used to determine psi. If \code{tau=NULL} a data driven approach is used to determine tau.
@@ -16,7 +19,7 @@
 #'     \item \code{alpha} (default: \code{0.05}) — Significance level used in the data-driven procedure for estimating \code{tau}.
 #'     \item \code{psi} (default: \code{NULL}) — A positive-definite matrix specifying the prior scale matrix for the inverse Wishart (variance) or Wishart (precision) distribution. Required if using a fixed predefined penalty.
 #'     \item \code{nu} (default: \code{NULL}) — Degrees of freedom for the prior distribution. Required if using a fixed predefined penalty. Must be an integer and compatible with the chosen \code{param}. For example, \code{(nu + q + 1)/q} must be an integer if \code{param = "variance"} and \code{(nu - q - 1)/q} must be an integer if \code{param = "precision"}.
-#'     \item \code{const} (default: \code{1e6}) — A constant used in data augmentation to set the value of precision weights for pseudo-observations. Larger values may provide better approximation of the penalty, but may introduce numerical instability. Small values may result in poor approximation of the penalty.
+#'     \item \code{const} (default: \code{1e8}) — A constant used in data augmentation to set the value of precision weights for pseudo-observations. Larger values may provide better approximation of the penalty, but may introduce numerical instability. Small values may result in poor approximation of the penalty.
 #'     \item \code{param} (default: \code{"variance"}) — Specifies the parametrization of the prior: either \code{"variance"} for an inverse Wishart prior on the variance-covariance matrix or \code{"precision"} for a Wishart prior on the precision matrix. For univariate random effect, \code{"log variance"} can also be specified.
 #'   }
 #' @param verbose Logical. If TRUE, prints details about the penalty used for fitting penalized model and messages about the penalized model fitting.
@@ -72,13 +75,8 @@ glmmTMBaug <- function(formula, data, family,
     stop("Non-default dispformula is not supported.")
   }
 
-  # rand_terms <- lme4::findbars(formula)
-  # if (length(rand_terms) != 1) {
-  #   stop("Only models with a single random effect term are supported currently.")
-  # }
-
   penOpt <- modifyList(
-    list(tau = NULL, trunc=c(10^-4, 10^4), alpha = 0.05, psi = NULL, nu = NULL, const = 1e6, param = "variance"),
+    list(tau = NULL, trunc=c(10^-4, 10^4), alpha = 0.05, psi = NULL, nu = NULL, const = 1e8, param = "variance"),
     penOpt
   )
 
@@ -91,7 +89,7 @@ glmmTMBaug <- function(formula, data, family,
   }
 
   if (penOpt$const < 1e4) {
-    warning("Smaller value of 'const' may result in poor penalty approximation. The recomended value of const is 10^6.")
+    warning("Smaller value of 'const' may result in poor penalty approximation. The recomended value of const is 10^6 or higher.")
   }
 
   tau_spec <- penOpt$tau
@@ -112,10 +110,8 @@ glmmTMBaug <- function(formula, data, family,
 
   allowed_families <- c("binomial", "poisson", "gaussian")
   if (!(model$modelInfo$family$family %in% allowed_families)) {
-    warning(sprintf(
-      "The '%s' family is not supported for penalized fitting. Returning the unpenalized model.",
-      model$modelInfo$family$family
-    ))
+    warning(paste0("The ", model$modelInfo$family$family,
+                   " family is not supported for penalized fitting. Returning the unpenalized model."))
     return(list(non_pen = model, pen = NULL, tau = NULL))
   }
 
@@ -140,8 +136,12 @@ glmmTMBaug <- function(formula, data, family,
         stop("'alpha' must be a number on [0,1] interval. It should be specified for data-driven approach to determine 'tau'. ")
       }
 
-      crit <- abs(get_margLik_glmmtmb(model, fit_tau1) - model$fit$objective) >
-        qchisq(1 - penOpt$alpha, df = 1) / 2
+      if(ncol(get_recovmat(model)[[1]])>1){
+        crit <- abs(get_margLik_glmmtmb(model, fit_tau1) - model$fit$objective) >
+          qchisq(1 - penOpt$alpha, df = 1) / 2
+        }else{
+        crit <- FALSE
+      }
 
       if (crit) {
         tau_finder <- function(tau) {
@@ -165,6 +165,7 @@ glmmTMBaug <- function(formula, data, family,
       } else {
         fit <- fit_tau1
         tau <- 1
+        if(ncol(get_recovmat(model)[[1]])==1) tau <- 0
       }
     }
   }

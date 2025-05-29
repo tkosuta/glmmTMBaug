@@ -1,21 +1,3 @@
-is_simple_random_structure <- function(model) {
-  bars <- lme4::findbars(formula(model))
-  if (length(bars) != 1) return(FALSE)
-
-  term_parts <- as.list(bars[[1]])
-  if (length(term_parts) != 3) return(FALSE)
-
-  # check structure: (expression | grouping factor)
-  lhs <- term_parts[[2]]
-  rhs <- term_parts[[3]]
-
-  is_valid_lhs <- is.name(lhs) || is.numeric(lhs)
-  is_valid_rhs <- is.name(rhs)
-
-  return(is_valid_lhs && is_valid_rhs)
-}
-
-
 get_fixed_formula <- function(model) {
   fixed_form <- nobars(formula(model))
   fixed_form_no_offset <- as.formula(trimws(gsub("\\+?\\s*offset\\([^)]*\\)", "", deparse(fixed_form))))
@@ -153,7 +135,7 @@ make_pseudo_data <- function(model_list, psi, nu, const=1e8, param="variance", l
 
     Y <- rep(c(pi0),fact)
     id <- c(1:fact)
-    Z < -matrix(rep(1,fact),ncol=1)
+    Z <- matrix(rep(1,fact),ncol=1)
   }
 
   pseudo_list <- list(Y=Y,
@@ -201,8 +183,6 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
 
   Y <- model.response(mf)
   X <- model.matrix(fix_formula, mf)
-  # Z <- model.matrix(rand_formula[["expr"]], mf)
-  # gr <- as.numeric(factor(mf[, rand_formula[["gr"]]]))
   for(i in 1:length(rand_formula)){
     eval(parse(text=paste0("Z",i, "<- model.matrix(rand_formula[[",i,"]][[1]], mf)")))
     eval(parse(text=paste0("gr",i, "<- as.numeric(factor(mf[, rand_formula[[",i,"]][[2]]]))")))
@@ -227,17 +207,6 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
       mf$freq_weights <- mf$`(weights)`
     }
   }
-
-  # model_list <- list(
-  #   Y = Y,
-  #   X = X,
-  #   Z = Z,
-  #   gr = gr,
-  #   weights = mf$`(weights)`,
-  #   offset = mf$`(offset)`,
-  #   prec_weights = mf$prec_weights,
-  #   freq_weights = mf$freq_weights
-  # )
 
   model_list <- list(
     Y = Y,
@@ -307,6 +276,13 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
       call_pen$weights <- as.symbol("prec_weights")
     }
   }
+
+  # if (family$family == "poisson" && family$link == "log") {
+  #   augmented_list$Y <- augmented_list$Y*augmented_list$prec_weights
+  #   augmented_list$offset <- log(augmented_list$prec_weights)+augmented_list$offset
+  #   call_pen$weights <- as.symbol("freq_weights")
+  # }
+
   if (family$family == "gaussian") {
     call_pen$weights <- as.symbol("freq_weights")
     call_pen$dispformula <- as.formula("~ offset(-log(prec_weights))")
