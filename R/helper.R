@@ -229,6 +229,7 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
     psi <- get_psi(D_est=D_est, tau=penOpt$tau, trunc=penOpt$trunc)
     q <- ncol(psi)
     nu <- 2 * q - 1
+    if(penOpt$param=="precision") nu <- 2*q+1
     const <- penOpt$const
     param <- penOpt$param
   } else {
