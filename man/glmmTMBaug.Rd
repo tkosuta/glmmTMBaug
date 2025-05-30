@@ -7,7 +7,10 @@
 glmmTMBaug(formula, data, family, penOpt = list(), verbose = TRUE, ...)
 }
 \arguments{
-\item{formula}{A model formula specifying fixed and random effects, as in \code{glmmTMB}.}
+\item{formula}{#' A model formula specifying fixed and random effects, as in \code{glmmTMB}.
+The current implementation supports penalization of a single grouping factor
+(i.e., one level of random effects).
+By default, the first random effect term specified in the formula is penalized.}
 
 \item{data}{A data frame containing the variables used in the model.}
 
@@ -23,7 +26,7 @@ The following penalty options are recognized (with defaults):
 \item \code{alpha} (default: \code{0.05}) — Significance level used in the data-driven procedure for estimating \code{tau}.
 \item \code{psi} (default: \code{NULL}) — A positive-definite matrix specifying the prior scale matrix for the inverse Wishart (variance) or Wishart (precision) distribution. Required if using a fixed predefined penalty.
 \item \code{nu} (default: \code{NULL}) — Degrees of freedom for the prior distribution. Required if using a fixed predefined penalty. Must be an integer and compatible with the chosen \code{param}. For example, \code{(nu + q + 1)/q} must be an integer if \code{param = "variance"} and \code{(nu - q - 1)/q} must be an integer if \code{param = "precision"}.
-\item \code{const} (default: \code{1e6}) — A constant used in data augmentation to set the value of precision weights for pseudo-observations. Larger values may provide better approximation of the penalty, but may introduce numerical instability. Small values may result in poor approximation of the penalty.
+\item \code{const} (default: \code{1e8}) — A constant used in data augmentation to set the value of precision weights for pseudo-observations. Larger values may provide better approximation of the penalty, but may introduce numerical instability. Small values may result in poor approximation of the penalty.
 \item \code{param} (default: \code{"variance"}) — Specifies the parametrization of the prior: either \code{"variance"} for an inverse Wishart prior on the variance-covariance matrix or \code{"precision"} for a Wishart prior on the precision matrix. For univariate random effect, \code{"log variance"} can also be specified.
 }}
 
