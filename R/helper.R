@@ -296,7 +296,7 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
   #pen_model$fit$objective <- model$obj$fn(pen_model$fit$par)
   #pen_model$frame <- model$frame
   #pen_model$modelInfo <- model$modelInfo
-  #pen_model$call <- call
+  pen_model$call <- call
   #pen_model$obj$env$data <- model$obj$env$data
 
   return(pen_model)
