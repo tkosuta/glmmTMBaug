@@ -270,19 +270,16 @@ fit_augmented <- function(model, data_driven, penOpt = list(tau, psi, nu, const,
   call_pen$formula <- as.formula(form)
   call_pen$data <- as.symbol("augmented_list")
   if(!is.null(model.offset(mf))) call_pen$offset <-  as.symbol("offset")
-  if(any(family$family %in% c("binomial", "poisson"))){
-    if(is.matrix(Y)){
-      call_pen$weights <- as.symbol("freq_weights")
-    }else{
-      call_pen$weights <- as.symbol("prec_weights")
-    }
+  if (family$family %in% c("binomial", "poisson")) {
+    call_pen$weights <- if (is.matrix(Y)) as.symbol("freq_weights") else as.symbol("prec_weights")
   }
 
-  # if (family$family == "poisson" && family$link == "log") {
-  #   augmented_list$Y <- augmented_list$Y*augmented_list$prec_weights
-  #   augmented_list$offset <- log(augmented_list$prec_weights)+augmented_list$offset
-  #   call_pen$weights <- as.symbol("freq_weights")
-  # }
+  if (family$family == "poisson" && family$link == "log") {
+    augmented_list$Y <- augmented_list$Y * augmented_list$prec_weights
+    augmented_list$offset <- log(augmented_list$prec_weights) + augmented_list$offset
+    call_pen$weights <- as.symbol("freq_weights")  # always freq_weights in this case
+  }
+
 
   if (family$family == "gaussian") {
     call_pen$weights <- as.symbol("freq_weights")

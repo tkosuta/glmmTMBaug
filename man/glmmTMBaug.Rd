@@ -7,14 +7,14 @@
 glmmTMBaug(formula, data, family, penOpt = list(), verbose = TRUE, ...)
 }
 \arguments{
-\item{formula}{#' A model formula specifying fixed and random effects, as in \code{glmmTMB}.
+\item{formula}{A model formula specifying fixed and random effects, as in \code{glmmTMB}.
 The current implementation supports penalization of a single grouping factor
 (i.e., one level of random effects).
 By default, the first random effect term specified in the formula is penalized.}
 
 \item{data}{A data frame containing the variables used in the model.}
 
-\item{family}{a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. Only binomial(), poisson() and gaussian() are currently supproted.}
+\item{family}{a family function, a character string naming a family function, or the result of a call to a family function (variance/link function) information. Only \code{binomial}, \code{poisson} and \code{gaussian} are currently supported.}
 
 \item{penOpt}{A named list of penalty options used to control the penalized likelihood fit. If \code{psi=NULL} and \code{nu=NULL}, a data-driven approach is used to determine psi. If \code{tau=NULL} a data driven approach is used to determine tau.
 If both \code{psi} and \code{nu} are specified, a prior with those parameters is used instead. In this case, the parameters \code{tau}, \code{trunc} and \code{alpha} are ignored.
@@ -38,7 +38,7 @@ The following penalty options are recognized (with defaults):
 The function returns a list with elements:
 
 \describe{
-\item{non_pen}{The unpenalized \code{glmmTMB} model.}
+\item{non_pen}{The non-penalized \code{glmmTMB} model.}
 \item{pen}{The penalized \code{glmmTMB} model fit with augmented data.}
 \item{tau}{Estimated or supplied shrinkage strength towards mean eigenvalue. If the penalty was prespecified the value is \code{NULL}.}
 \item{error_pen}{If penalized fitting fails, the function returns the original unpenalized glmmTMB fit with pen = NULL and a flag error_pen = TRUE to indicate the failure.}
@@ -52,6 +52,9 @@ with a penalty on the random effects covariance matrix via a data augmentation a
 When the random effect structure is univariate, the prior distribution on the variance is Inverse Gamma distribution that equals to univariate Inverse Wishart distribution.
 To implement an Inverse Gamma penalty (or some other parametrization; see \code{penOpt} parameter \code{param} for details) with specified shape (\eqn{\alpha}) and scale (\eqn{\beta}),
 set \code{nu=}\eqn{2\alpha} and \code{psi= }\eqn{2\beta}.
+
+Augmented approach in Poisson model with log link is implemented by the offset approach to improve numerical stability. Poisson models with different link functions
+are implemented using weights. For these models the recommended value is \code{cons=10^6}.
 }
 \examples{
 \dontrun{
